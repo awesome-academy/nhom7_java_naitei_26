@@ -20,26 +20,23 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "BearerAuth")
 public class SpaceController {
 
-
     private final SpaceService spaceService;
 
     /**
      * Search and filter co-working spaces.
      *
-     * <p>Requires authenticated user with USER role (or higher).</p>
+     * <p>
+     * Requires authenticated user with USER role (or higher).
+     * </p>
      *
      * @param request search parameters
      * @return paginated list of matching spaces
      */
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('USER', 'HOST', 'MODERATOR', 'ADMIN')")
-    @Operation(
-            summary = "Search & Filter Co-working spaces",
-            description = "Allows users to search and filter co-working spaces by name, address (city, street), type (private office, working desk, meeting space), price (per month, day, hour), and availability time."
-    )
+    @Operation(summary = "Search & Filter Co-working spaces", description = "Allows users to search and filter co-working spaces by name, address (city, street), type (private office, working desk, meeting space), price (per month, day, hour), and availability time.")
     public ResponseEntity<ApiResponse<PageResponse<SpaceResponse>>> searchSpaces(
-            @ModelAttribute SpaceSearchRequest request
-    ) {
+            @ModelAttribute SpaceSearchRequest request) {
         PageResponse<SpaceResponse> result = spaceService.searchSpaces(request);
         return ResponseEntity.ok(ApiResponse.success(result, "Fetched co-working spaces successfully"));
     }

@@ -128,6 +128,33 @@ File ghi lại những thay đổi của dự án.
    - Không gửi token, gửi refresh token, hoặc gửi access token đã logout → `403 Forbidden`.
    - `cccdUrl`/`businessLicenseUrl` là signed URL hết hạn sau 1 giờ — không nên cache lâu dài ở client, gọi lại `/me` để lấy URL mới khi cần.
 
+### 2026-08-22 - Moderator User Management & KYC Verification APIs
+
+**Người thực hiện:** [Trịnh Yến Nhi]
+
+#### Added
+
+- REST API & Web MVC quản lý danh sách người dùng (`GET /api/moderator/users`, `GET /moderator/users`): hỗ trợ tìm kiếm theo từ khóa, lọc theo trạng thái/vai trò và phân trang
+- REST API & Web Action cập nhật trạng thái người dùng (`PUT /api/moderator/users/{id}/status`, `POST /moderator/users/{id}/status`): hỗ trợ `ACTIVE`, `INACTIVE`, `BLOCKED` kèm cơ chế thu hồi token tức thì qua blacklist
+- 2 REST APIs & Web Actions xác minh hồ sơ KYC:
+  - `PUT /api/moderator/users/{id}/verify-identity` & `POST /moderator/users/{id}/verify-identity`: Xác minh CCCD/CMND cá nhân
+  - `PUT /api/moderator/users/{id}/verify-business` & `POST /moderator/users/{id}/verify-business`: Xác minh giấy phép kinh doanh của Host
+- Quy tắc kiểm soát & bảo mật nghiệp vụ tại tầng Service:
+  - Chặn người dùng tự khóa tài khoản của chính mình
+  - Chặn tự duyệt xác minh danh tính hoặc giấy phép kinh doanh cho tài khoản của chính mình
+  - Bắt buộc phải có hình ảnh/tài liệu tương ứng mới cho phép xác minh KYC
+  - Chặn quyền của Moderator khi thao tác trên tài khoản của Administrator
+  - Tự động bỏ qua cập nhật và trả về kết quả ngay nếu trạng thái không thay đổi
+- Thông báo đa ngôn ngữ i18n tiếng Anh và tiếng Việt cho toàn bộ luồng User Management & KYC
+- Bộ Unit Test toàn diện cho Service, REST API Controller và Web MVC Controller
+
+#### Changed
+
+- Tái cấu trúc cấu hình Spring Security thành 2 filter chain độc lập:
+  - `apiSecurityFilterChain` cho `/api/**`: 100% Stateless (JWT Bearer, không session/cookie, tắt CSRF)
+  - `webSecurityFilterChain` cho Web UI & Swagger (`/**`): Quản lý phiên bằng Session và bật bảo vệ CSRF
+- Chuẩn hóa xử lý ngoại lệ nghiệp vụ qua `AppException` kết hợp `GlobalExceptionHandler` và thông điệp i18n
+
 ---
 
 ### 2026-08-21 - Co-working Space Booking API

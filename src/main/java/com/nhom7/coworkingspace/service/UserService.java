@@ -1,14 +1,18 @@
 package com.nhom7.coworkingspace.service;
 
 import com.nhom7.coworkingspace.dto.request.UpdateUserRequest;
+import com.nhom7.coworkingspace.dto.request.UserSearchRequest;
 import com.nhom7.coworkingspace.dto.response.HostUpgradeResponse;
+import com.nhom7.coworkingspace.dto.response.PageResponse;
 import com.nhom7.coworkingspace.dto.response.UpdateUserRoleResponse;
+import com.nhom7.coworkingspace.dto.response.UpdateUserStatusResponse;
+import com.nhom7.coworkingspace.dto.response.UpdateUserVerificationResponse;
 import com.nhom7.coworkingspace.dto.response.UserProfileResponse;
+import com.nhom7.coworkingspace.dto.response.UserSearchResponse;
+import com.nhom7.coworkingspace.enums.UserStatus;
 import org.springframework.web.multipart.MultipartFile;
 
-
 public interface UserService {
-
 
     UpdateUserRoleResponse addRole(Long userId, String roleName);
 
@@ -26,4 +30,12 @@ public interface UserService {
      * @return the resulting profile, plus whether the user already had the HOST role
      */
     HostUpgradeResponse becomeHost(String email, MultipartFile businessLicense);
+
+    PageResponse<UserSearchResponse> searchUsers(UserSearchRequest request);
+
+    UpdateUserStatusResponse updateUserStatus(Long targetUserId, UserStatus newStatus, String currentAdminEmail);
+
+    UpdateUserVerificationResponse updateIdentityVerification(Long targetUserId, boolean verified, String currentAdminEmail);
+
+    UpdateUserVerificationResponse updateBusinessVerification(Long targetUserId, boolean verified, String currentAdminEmail);
 }

@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -36,7 +37,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
+            MethodArgumentNotValidException ex) {
         Locale locale = LocaleContextHolder.getLocale();
         Map<String, String> errors = new LinkedHashMap<>();
 
@@ -86,11 +88,21 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException ex) {
+    public ResponseEntity<ApiResponse<Void>> handleMethodNotSupportedException(
+            HttpRequestMethodNotSupportedException ex) {
         Locale locale = LocaleContextHolder.getLocale();
         String message = resolveMessage("common.method.not.supported", locale);
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(ApiResponse.error(HttpStatus.METHOD_NOT_ALLOWED.value(), message));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatusException(ResponseStatusException ex) {
+        Locale locale = LocaleContextHolder.getLocale();
+        String reason = ex.getReason();
+        String message = (reason != null) ? resolveMessage(reason, locale) : ex.getStatusCode().toString();
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(ApiResponse.error(ex.getStatusCode().value(), message));
     }
 
     @ExceptionHandler(Exception.class)

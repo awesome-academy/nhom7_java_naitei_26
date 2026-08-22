@@ -11,7 +11,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -60,7 +59,7 @@ public class FileStorageServiceImpl implements FileStorageService {
                     .toBodilessEntity();
 
             return filePath;
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             log.error("Failed to upload file to Supabase storage in directory: {}", subDirectory, ex);
             throw new FileStorageException("common.error", ex);
         }
@@ -70,8 +69,10 @@ public class FileStorageServiceImpl implements FileStorageService {
     public String createSignedUrl(String filePath, int expiresInSeconds) {
         try {
             String signUrl = String.format("%s/storage/v1/object/sign/%s/%s", supabaseUrl, bucketName, filePath);
-            record SignRequest(int expiresIn) {}
-            record SignResponse(String signedURL) {}
+            record SignRequest(int expiresIn) {
+            }
+            record SignResponse(String signedURL) {
+            }
 
             SignResponse response = restClient.post()
                     .uri(signUrl)
