@@ -7,6 +7,28 @@ File ghi lại những thay đổi của dự án.
 
 ## [Unreleased]
 
+### 2026-08-22 - View Statistics and Payment History
+
+**Người thực hiện:** [Trần Trung Hiếu]
+
+#### Added
+
+- Endpoint `GET /api/admin/statistics/overview`: thống kê tổng số user, số booking thành công và số venue đang hoạt động
+- Endpoint `GET /api/admin/statistics/revenue`: thống kê tổng doanh thu theo năm và doanh thu chi tiết theo từng tháng
+- Endpoint `GET /api/admin/payments`: lấy toàn bộ lịch sử thanh toán trên hệ thống, sắp xếp giao dịch mới nhất trước
+- `StatisticsOverviewResponse`: DTO phản hồi dữ liệu thống kê tổng quan hệ thống
+- `RevenueStatisticsResponse`: DTO phản hồi tổng doanh thu và doanh thu theo 12 tháng
+- `PaymentResponse`: DTO phản hồi thông tin lịch sử thanh toán
+- `PaymentRepository`: bổ sung truy vấn thống kê tổng doanh thu theo năm, doanh thu theo tháng và lấy danh sách payment theo thời gian thanh toán giảm dần
+- `StatisticsService` & `StatisticsServiceImpl`: xử lý logic thống kê tổng quan, thống kê doanh thu và lịch sử thanh toán
+- `AdminStatisticsController`: cung cấp API thống kê tổng quan và thống kê doanh thu cho Admin
+- `AdminPaymentController`: cung cấp API xem toàn bộ lịch sử thanh toán cho Admin
+- `StatisticsServiceImplTest`: unit test cho thống kê tổng quan, thống kê doanh thu và lịch sử thanh toán
+
+#### Changed
+
+- Giới hạn các API thống kê và lịch sử thanh toán chỉ cho tài khoản có vai trò `ADMIN`
+- Doanh thu theo năm được trả về kèm đầy đủ 12 tháng, các tháng không có giao dịch có giá trị doanh thu bằng `0`
 ### 2026-08-22 - Register/Upgrade to HOST (POST /api/users/me/roles/host) (#99269)
 
 **Người thực hiện:** [Huỳnh Trương Thảo Duyên]
@@ -148,7 +170,6 @@ File ghi lại những thay đổi của dự án.
 
 ### 2026-08-21 - Account Confirmation and Password Reset via OTP
 
-
 **Người thực hiện:** [Trịnh Yến Nhi]
 
 #### Added
@@ -158,12 +179,28 @@ File ghi lại những thay đổi của dự án.
 - DTO `ConfirmAccountRequest` và `ResetPasswordRequest` kèm validation (định dạng email, OTP đúng 6 chữ số, độ dài mật khẩu)
 - Phương thức `OtpService.confirmAccount(...)` và `OtpService.resetPassword(...)` bảo mật (so khớp hash OTP, kiểm tra hạn dùng theo Clock, xóa token sau khi sử dụng để chống tấn công replay)
 - Method `OtpTokenRepository.findByUserAndPurpose(...)` hỗ trợ tra cứu OTP theo người dùng và mục đích
-- Cơ chế giới hạn số lần nhập sai OTP: Hủy và vô hiệu hóa mã OTP ngay lập tức khi nhập sai $\ge 5$ lần (`failed_attempts` trong entity `OtpToken`)
+- Cơ chế giới hạn số lần nhập sai OTP: Hủy và vô hiệu hóa mã OTP ngay lập tức khi nhập sai >= 5 lần (`failed_attempts` trong entity `OtpToken`)
 - Cơ chế Cooldown gửi OTP: Chặn và trả về HTTP 429 nếu yêu cầu gửi lại OTP trong vòng 60 giây kể từ lần gửi gần nhất
 - Thu hồi và vô hiệu hóa toàn bộ JWT Token cũ khi đặt lại mật khẩu thành công thông qua `passwordChangedAt` và `TokenBlacklistService` trong `JwtAuthenticationFilter`
 - Bổ sung cấu hình `app.otp.resend-cooldown-seconds` và `app.otp.max-failed-attempts` có thể tùy biến qua biến môi trường
 - Thông điệp đa ngôn ngữ i18n tiếng Anh và tiếng Việt cho xác nhận tài khoản, đổi mật khẩu, cooldown và lỗi vượt quá số lần nhập sai OTP
 - Unit test đầy đủ cho `OtpServiceImpl`, `AuthController`, `JwtAuthenticationFilter` bao gồm các trường hợp thành công, OTP hết hạn, cooldown, sai mã OTP, giới hạn số lần thử và thu hồi token
+
+### 2026-08-20 - Change User Role
+
+**Người thực hiện:** [Trần Trung Hiếu]
+
+#### Added
+
+- Chức năng cho phép `ADMIN` thay đổi role của user trong hệ thống
+- Xử lý cập nhật quan hệ giữa user và role theo mô hình phân quyền RBAC
+- Bổ sung logic service phục vụ chức năng thay đổi quyền người dùng
+- Bổ sung xử lý truy cập dữ liệu role và quan hệ `user_roles`
+
+#### Changed
+
+- Cập nhật thông tin phân quyền của user sau khi Admin thay đổi role
+- Giới hạn chức năng thay đổi role chỉ cho tài khoản có vai trò `ADMIN`
 
 ### 2026-08-20 - Booking Status Email Notification
 
@@ -271,6 +308,7 @@ File ghi lại những thay đổi của dự án.
 
 ---
 
+
 ### 2026-08-20 - Unit test for JwtAuthenticationFilter
 
 **Người thực hiện:** [Trịnh Yến Nhi]
@@ -344,21 +382,21 @@ File ghi lại những thay đổi của dự án.
 
 ## Entity Design Decisions
 
-| #   | Chỗ thay đổi           | ERD gốc         | Code thực tế                  | Lý do                                       |
-| --- | ---------------------- | --------------- | ----------------------------- | ------------------------------------------- |
-| 1   | Bảng User              | `user`          | `users`                       | `user` là reserved keyword trong PostgreSQL |
-| 2   | latitude / longitude   | `decimal(10,8)` | `BigDecimal`                  | Tránh sai số float                          |
-| 3   | description            | `text`          | `columnDefinition = "TEXT"`   | JPA mặc định dùng VARCHAR(255)              |
-| 4   | capacity               | `int`           | `Integer`                     | Wrapper class hỗ trợ giá trị null           |
-| 5   | open_time / close_time | `time`          | `LocalTime`                   | Java type mapping cho PostgreSQL time       |
-| 6   | Các timestamp          | `timestamp`     | `LocalDateTime`               | Java type mapping cho PostgreSQL timestamp  |
-| 7   | payment.booking_id     | FK              | `@OneToOne` + `unique = true` | Đảm bảo ràng buộc 1-1 ở tầng DB             |
+| # | Chỗ thay đổi | ERD gốc | Code thực tế | Lý do |
+| --- | --- | --- | --- | --- |
+| 1 | Bảng User | `user` | `users` | `user` là reserved keyword trong PostgreSQL |
+| 2 | latitude / longitude | `decimal(10,8)` | `BigDecimal` | Tránh sai số float |
+| 3 | description | `text` | `columnDefinition = "TEXT"` | JPA mặc định dùng VARCHAR(255) |
+| 4 | capacity | `int` | `Integer` | Wrapper class hỗ trợ giá trị null |
+| 5 | open_time / close_time | `time` | `LocalTime` | Java type mapping cho PostgreSQL time |
+| 6 | Các timestamp | `timestamp` | `LocalDateTime` | Java type mapping cho PostgreSQL timestamp |
+| 7 | payment.booking_id | FK | `@OneToOne` + `unique = true` | Đảm bảo ràng buộc 1-1 ở tầng DB |
 
 ---
 
 _Template cho các lần cập nhật tiếp theo:_
 
-```
+```md
 ## [Unreleased]
 
 ### YYYY-MM-DD - [Tên tính năng]
@@ -366,14 +404,17 @@ _Template cho các lần cập nhật tiếp theo:_
 **Người thực hiện:** [Tên thành viên]
 
 #### Added
+
 - ...
 
 #### Changed
+
 - ...
 
 #### Fixed
+
 - ...
 
 #### Removed
+
 - ...
-```
